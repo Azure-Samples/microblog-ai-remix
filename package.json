@@ -60,7 +60,7 @@
     "postcss": "^8.4.38",
     "rimraf": "^6.0.1",
     "tailwindcss": "^4.0.9",
-    "typescript": "^5.1.6"
+    "typescript": "^5.8.2"
   },
   "overrides": {
     "esbuild": "0.25.0",
