@@ -33,7 +33,7 @@
     "openai": "^4.81.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "vite": "^5.1.4",
+    "vite": "^6.2.0",
     "vite-tsconfig-paths": "^5.0.0",
     "vitest": "^1.2.0"
   },
