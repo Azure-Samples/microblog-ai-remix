@@ -1,5 +1,5 @@
 {
-  "name": "microblog-ai-server",
+  "name": "microblog-ai-remix-server",
   "version": "1.0.0",
   "description": "Azure Functions Backend with Remix, Azure Static Web Apps and OpenAI",
   "main": "./dist/src/functions/ssr.js",
@@ -15,9 +15,16 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "@azure/functions": "^4.0.0"
+    "@azure/functions": "^4.0.0",
+    "@remix-run/express": "^2.16.0",
+    "compression": "^1.8.0",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.7.5",
+    "@types/express": "^5.0.0",
+    "@types/morgan": "^1.9.9",
     "@types/node": "^20.x",
     "rimraf": "^6.0.0",
     "typescript": "^5.7.3"
