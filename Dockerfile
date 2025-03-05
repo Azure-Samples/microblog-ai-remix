@@ -21,7 +21,14 @@ WORKDIR /app
 # Copy the rest of the application code
 COPY . .
 
+# Debug: List files in server/src
+RUN ls -la server/src/
+
+# Build the application
 RUN npm run build:all
+
+# Debug: List files in build
+RUN ls -la server/dist/
 
 # Stage 2: Run the application
 FROM node:20-alpine AS runtime
@@ -50,6 +57,9 @@ WORKDIR /app
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/public ./public
+
+# Debug: List files in server/dist
+RUN ls -la server/dist/
 
 EXPOSE 80
 
