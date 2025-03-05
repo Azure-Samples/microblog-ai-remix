@@ -1,7 +1,7 @@
 /** @type {import('@remix-run/dev').AppConfig} */
 export default {
   ignoredRouteFiles: ['**/.*'],
-  server: '@scandinavianairlines/remix-azure-functions',
+  server: '@remix-run/express',
   serverBuildPath: 'build/server/index.js',
   serverModuleFormat: 'esm',
   future: {
@@ -11,4 +11,6 @@ export default {
     v2_normalizeFormMethod: true,
     v2_routeConvention: true,
   },
+  publicPath: '/build/',
+  assetsBuildDirectory: 'build/client',
 };
