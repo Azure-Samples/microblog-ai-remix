@@ -26,7 +26,7 @@ if (MODE === 'development') {
   app.use(morgan('tiny'));
 }
 
-// Serve static files from the build directory
+// Serve static files from the build directory and public directory
 app.use('/build', express.static(path.join(BUILD_DIR, 'client')));
 app.use(express.static(path.join(__dirname, '../../public')));
 
