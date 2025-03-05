@@ -10,7 +10,8 @@
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "dev": "npm run clean && npm run build && npm run start",
-    "start": "func start",
+    "start-func": "func start",
+    "start": "node dist/index.js",
     "prebuild": "npm run clean",
     "test": "echo \"No tests yet...\""
   },
@@ -18,6 +19,7 @@
     "@azure/functions": "^4.0.0",
     "@remix-run/express": "^2.16.0",
     "compression": "^1.8.0",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "morgan": "^1.10.0"
   },
