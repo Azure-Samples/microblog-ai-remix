@@ -12,9 +12,9 @@
     "dev:function": "cd server && npm run build && npm run start",
     "clean": "rimraf build && rimraf server/dist",
     "lint": "eslint . --cache --cache-location ./node_modules/.cache/eslint",
-    "start": "remix-serve ./build/server/index.js",
+    "start": "node server/dist/index.js",
     "typecheck": "tsc",
-    "deploy": "npm run build:all && swa deploy"
+    "deploy": "npm run build:all"
   },
   "dependencies": {
     "@azure/functions": "^4.6.0",
