@@ -1,5 +1,5 @@
 import { createRequestHandler } from '@remix-run/express';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import compression from 'compression';
 import morgan from 'morgan';
 import path from 'path';
@@ -30,7 +30,7 @@ if (MODE === 'development') {
 app.use('/build', express.static(path.join(BUILD_DIR, 'client')));
 app.use(express.static(path.join(__dirname, '../../public')));
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('OK');
 });
 
