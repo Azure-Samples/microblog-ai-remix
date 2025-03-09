@@ -42,16 +42,36 @@ const build = await import(buildUrl.href);
 
 const app = express();
 
-app.use(compression());
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req: Request, res: Response) => {
+    if (req.headers['x-no-compression']) {
+      return false; // don't compress responses with this request header
+    }
+    return compression.filter(req, res); // fallback to standard filter function
+  }
+}));
 
 if (MODE === 'development') {
   app.use(morgan('tiny'));
 }
 
 // Serve static files from the build directory and public directory
-app.use('/assets', express.static(path.join(BUILD_DIR, 'client/assets')));
-app.use(express.static(path.join(BUILD_DIR, 'client')));
-app.use('/build', express.static(path.join(BUILD_DIR, 'client')));
+app.use('/assets', express.static(path.join(BUILD_DIR, 'client/assets'), {
+  maxAge: '1y',
+  immutable: true,
+}));
+
+app.use(express.static(path.join(BUILD_DIR, 'client'), {
+  maxAge: '30d'
+}));
+
+app.use('/build', express.static(path.join(BUILD_DIR, 'client'), {
+  maxAge: '1y',
+  immutable: true,
+}));
+
 app.use(express.static(path.join(__dirname, '../../public')));
 
 app.get('/health', (req: Request, res: Response) => {
