@@ -19,12 +19,12 @@ for var in AZURE_OPENAI_API_KEY AZURE_OPENAI_ENDPOINT AZURE_OPENAI_DEPLOYMENT_NA
 done
 
 # Configuration Variables
-RESOURCE_GROUP="microblog-ai-remix-test-rg"
-LOCATION="eastus2"
-ACR_NAME="microblogairemitestxacr"
-CONTAINER_APP_ENV="microblog-ai-remix-test-env"
-CONTAINER_APP_NAME="microblog-ai-remix-test-app"
-IMAGE_NAME="microblog-ai-test-remix"
+RESOURCE_GROUP="microblog-ai-remix-rg"
+LOCATION="eastus"
+ACR_NAME="microblogairemixacr"
+CONTAINER_APP_ENV="microblog-ai-remix-env"
+CONTAINER_APP_NAME="microblog-ai-remix-app"
+IMAGE_NAME="microblog-ai-remix"
 IMAGE_TAG="latest"
 
 # Step 1: Build the Docker image locally
