@@ -1,3 +1,3 @@
-import { startServer } from "./express-app.js";
+import { startServer } from "./app.js";
 
 startServer();
