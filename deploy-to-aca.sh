@@ -1,6 +1,23 @@
 #!/bin/bash
 set -e
 
+# Load environment variables from .env file
+if [ -f .env]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+else
+  echo ".env file not found. Please create a .env file with the required variables."
+  exit 1
+fi
+
+# Check if required environment variables are set
+for var in AZURE_OPENAI_API_KEY AZURE_OPENAI_ENDPOINT AZURE_OPENAI_DEPLOYMENT_NAME AZURE_OPENAI_API_VERSION; do
+  if [ -z "${!var}" ]; then
+    echo "Error: $var is not set in the .env file."
+    exit 1
+  fi
+done
+
 # Configuration Variables
 RESOURCE_GROUP="microblog-ai-remix-rg"
 LOCATION="eastus2"
