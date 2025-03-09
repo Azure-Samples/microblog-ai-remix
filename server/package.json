@@ -1,8 +1,8 @@
 {
   "name": "microblog-ai-remix-server",
   "version": "1.0.0",
-  "description": "Azure Functions Backend with Remix, Azure Static Web Apps and OpenAI",
-  "main": "./dist/src/functions/ssr.js",
+  "description": "Express Server for Remix Application with Azure OpenAI with Azure Container Apps",
+  "main": "./dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -10,13 +10,11 @@
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "dev": "npm run clean && npm run build && npm run start",
-    "start-func": "func start",
     "start": "node dist/index.js",
     "prebuild": "npm run clean",
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "@azure/functions": "^4.0.0",
     "@remix-run/express": "^2.16.0",
     "compression": "^1.8.0",
     "dotenv": "^16.4.7",
@@ -32,6 +30,6 @@
     "typescript": "^5.7.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
