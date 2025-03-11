@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: microblog-ai-remix
+metadata:
+  template: microblog-ai-remix@0.1.0
+infra:
+  provider: bicep
+  path: ./infra
+  module: main
+services:
+  web-app:
+    project: .
+    language: js
+    host: containerapp
+    dist: build
+    docker:
+      path: Dockerfile
+hooks:
+  preprovision:
+    posix:
+      shell: sh
+      run: ./scripts/preprovision.sh
+      interactive: true
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: ./scripts/preprovision.ps1
+      interactive: true
+      continueOnError: false
+  predeploy:
+    posix:
+      shell: sh
+      run: ./scripts/prepdeploy.sh
+      interactive: true
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: ./scripts/prepdeploy.ps1
+      interactive: true
+      continueOnError: false
+  postprovision:
+    windows:
+      shell: pwsh
+      run: azd env get-values > .env
+    posix:
+      shell: sh
+      run: azd env get-values > .env
