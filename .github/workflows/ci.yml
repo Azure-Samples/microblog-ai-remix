@@ -25,11 +25,8 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Azure Functions Core Tools
-        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
-
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Lint
         run: npm run lint
