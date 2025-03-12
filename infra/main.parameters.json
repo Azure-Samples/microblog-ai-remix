@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION=eastus}"
+    },
+    "azureOpenAIApiKey": {
+      "value": "${AZURE_OPENAI_API_KEY}"
+    },
+    "azureOpenAIEndpoint": {
+      "value": "${AZURE_OPENAI_ENDPOINT}"
+    },
+    "azureOpenAIDeploymentName": {
+      "value": "${AZURE_OPENAI_DEPLOYMENT_NAME}"
+    },
+    "azureOpenAIApiVersion": {
+      "value": "${AZURE_OPENAI_API_VERSION=2024-08-01-preview}"
+    },
+    "containerRegistryName": {
+      "value": "${AZURE_CONTAINER_REGISTRY_NAME}"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "${AZURE_LOG_ANALYTICS_NAME}"
+    },
+    "applicationInsightsName": {
+      "value": "${AZURE_APPLICATION_INSIGHTS_NAME}"
+    },
+    "containerAppsEnvironmentName": {
+      "value": "${AZURE_CONTAINER_APPS_ENVIRONMENT_NAME}"
+    },
+    "containerAppName": {
+      "value": "${AZURE_CONTAINER_APP_NAME}"
+    },
+    "managedIdentity": {
+      "value": "${MANAGED_IDENTITY=false}"
+    }
+  }
+}

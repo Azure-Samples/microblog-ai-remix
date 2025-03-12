@@ -1,0 +1,9 @@
+{
+  "appContainerApps": "app",
+  "appContainerAppsEnvironments": "cae",
+  "containerRegistryRegistries": "acr",
+  "insightsComponents": "ai",
+  "operationalInsightsWorkspaces": "log",
+  "resourcesResourceGroups": "rg",
+  "managedIdentityUserAssignedIdentities": "id"
+}
