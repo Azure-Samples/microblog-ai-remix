@@ -45,6 +45,15 @@ var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
 
+// Calculate resource names in advance
+var logAnalyticsWorkspaceFinalName = !empty(logAnalyticsWorkspaceName) 
+  ? logAnalyticsWorkspaceName 
+  : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+
+var registryFinalName = !empty(containerRegistryName) 
+  ? containerRegistryName 
+  : '${abbrs.containerRegistryRegistries}${resourceToken}'
+
 // Resource Group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: '${abbrs.resourcesResourceGroups}${environmentName}'
@@ -57,7 +66,7 @@ module registry './core/registry/container-registry.bicep' = {
   name: 'container-registry'
   scope: resourceGroup
   params: {
-    name: !empty(containerRegistryName) ? containerRegistryName : '${abbrs.containerRegistryRegistries}${resourceToken}'
+    name: registryFinalName
     location: location
     tags: tags
     sku: 'Basic'
@@ -70,9 +79,7 @@ module logAnalyticsWorkspace './core/monitoring/log-analytics.bicep' = {
   name: 'log-analytics'
   scope: resourceGroup
   params: {
-    name: !empty(logAnalyticsWorkspaceName)
-      ? logAnalyticsWorkspaceName
-      : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    name: logAnalyticsWorkspaceFinalName
     location: location
     tags: tags
     sku: 'PerGB2018'
@@ -92,6 +99,10 @@ module appInsights './core/monitoring/app-insights.bicep' = {
   }
 }
 
+// Construct resource IDs
+var logAnalyticsWorkspaceResourceId = resourceId(resourceGroup.name, 'Microsoft.OperationalInsights/workspaces', logAnalyticsWorkspaceFinalName)
+var registryResourceId = resourceId(resourceGroup.name, 'Microsoft.ContainerRegistry/registries', registryFinalName)
+
 // Container App Environment Module
 module containerAppsEnvironment './core/host/container-apps-environment.bicep' = {
   name: 'container-apps-environment'
@@ -103,7 +114,7 @@ module containerAppsEnvironment './core/host/container-apps-environment.bicep' =
     location: location
     tags: tags
     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.id
-    logAnalyticsWorkspaceSharedKey: logAnalyticsWorkspace.outputs.sharedKey
+    logAnalyticsWorkspaceSharedKey: listKeys(logAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey
   }
 }
 
@@ -142,8 +153,8 @@ module containerApp './app/containerapp.bicep' = {
     tags: tags
     containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
     containerRegistryLoginServer: registry.outputs.loginServer
-    containerRegistryUsername: registry.outputs.username
-    containerRegistryPassword: registry.outputs.password
+    containerRegistryUsername: listCredentials(registryResourceId, '2023-07-01').username
+    containerRegistryPassword: listCredentials(registryResourceId, '2023-07-01').passwords[0].value
     applicationInsightsConnectionString: appInsights.outputs.connectionString
     azureOpenAIApiKey: azureOpenAIApiKey
     azureOpenAIEndpoint: createNewOpenAIResource ? openAI.outputs.endpoint : azureOpenAIEndpoint
