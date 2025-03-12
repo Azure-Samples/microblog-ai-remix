@@ -18,7 +18,7 @@ param containerAppsEnvironmentName string = ''
 param containerAppName string = ''
 
 // Azure OpenAI parameters
-@description('Azure OpenAI API key')
+@description('Azure OpenAI API Key')
 @secure()
 param azureOpenAIApiKey string
 
@@ -64,9 +64,7 @@ module logAnalyticsWorkspace './core/monitoring/log-analytics.bicep' = {
   name: 'log-analytics'
   scope: resourceGroup
   params: {
-    name: !empty(logAnalyticsWorkspaceName)
-      ? logAnalyticsWorkspaceName
-      : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    name: !empty(logAnalyticsWorkspaceName) ? logAnalyticsWorkspaceName : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
     location: location
     tags: tags
     sku: 'PerGB2018'
@@ -91,9 +89,7 @@ module containerAppsEnvironment './core/host/container-apps-environment.bicep' =
   name: 'container-apps-environment'
   scope: resourceGroup
   params: {
-    name: !empty(containerAppsEnvironmentName)
-      ? containerAppsEnvironmentName
-      : '${abbrs.appContainerAppsEnvironments}${resourceToken}'
+    name: !empty(containerAppsEnvironmentName) ? containerAppsEnvironmentName : '${abbrs.appContainerAppsEnvironments}${resourceToken}'
     location: location
     tags: tags
     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.id
@@ -111,3 +107,37 @@ module containerAppIdentity './core/security/managed-identity.bicep' = if (manag
     tags: tags
   }
 }
+
+// Container App Module
+module containerApp './app/containerapp.bicep' = {
+  name: 'container-app'
+  scope: resourceGroup
+  params: {
+    name: !empty(containerAppName) ? containerAppName : '${abbrs.appContainerApps}${resourceToken}'
+    location: location
+    tags: tags
+    containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
+    containerRegistryLoginServer: registry.outputs.loginServer
+    containerRegistryUsername: registry.outputs.username
+    containerRegistryPassword: registry.outputs.password
+    applicationInsightsConnectionString: appInsights.outputs.connectionString
+    azureOpenAIApiKey: azureOpenAIApiKey
+    azureOpenAIEndpoint: azureOpenAIEndpoint
+    azureOpenAIDeploymentName: azureOpenAIDeploymentName
+    azureOpenAIApiVersion: azureOpenAIApiVersion
+    userAssignedIdentityId: managedIdentity ? containerAppIdentity.outputs.id : ''
+    managedIdentity: managedIdentity
+  }
+}
+
+// Outputs
+output AZURE_LOCATION string = location
+output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnvironment.outputs.name
+output AZURE_CONTAINER_REGISTRY_NAME string = registry.outputs.name
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = registry.outputs.loginServer
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.outputs.connectionString
+output AZURE_CONTAINER_APP_NAME string = containerApp.outputs.name
+output AZURE_CONTAINER_APP_URI string = containerApp.outputs.uri
+output AZURE_RESOURCE_GROUP string = resourceGroup.name
+output AZURE_TENANT_ID string = tenant().tenantId
+output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
