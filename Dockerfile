@@ -10,12 +10,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Install dependencies in root
-RUN npm ci
+# Install dependencies in root (changed from npm ci to npm install)
+RUN npm install
 
-# Install dependencies in server directory
+# Install dependencies in server directory (changed from npm ci to npm install)
 WORKDIR /app/server
-RUN npm ci
+RUN npm install
 WORKDIR /app
 
 # Copy the rest of the application code
@@ -45,11 +45,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Install production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies (changed from npm ci to npm install)
+RUN npm install --omit=dev
 
 WORKDIR /app/server
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 WORKDIR /app
 
