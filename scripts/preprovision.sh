@@ -4,7 +4,7 @@ set -e
 # Generate a unique suffix based on timestamp and random characters
 TIMESTAMP=$(date +%Y%m%d%H%M%S)
 RANDOM_CHARS=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
-UNIQUE_SUFFIX="${TIMESTAMP}-${RANDOM_CHARS}"
+UNIQUE_SUFFIX="${TIMESTAMP:(-6)}-${RANDOM_CHARS}"
 
 # Get current environment name or use default
 CURRENT_ENV_NAME=$(azd env get-name 2>/dev/null || echo "")
@@ -12,7 +12,7 @@ if [ -z "$CURRENT_ENV_NAME" ]; then
   # Set a default environment name with unique suffix
   DEFAULT_ENV_NAME="microblog-${UNIQUE_SUFFIX}"
   echo "Setting unique environment name: ${DEFAULT_ENV_NAME}"
-  azd env new $DEFAULT_ENV_NAME -y
+  echo "yes" | azd env new $DEFAULT_ENV_NAME
 fi
 
 # Load variables from .env file if it exists
@@ -36,16 +36,13 @@ if [ -f .env ]; then
       VAR_VALUE="${VAR_VALUE%\'}"
       VAR_VALUE="${VAR_VALUE#\'}"
       
-      # Set the variable in azd environment
-      echo "Setting $VAR_NAME from .env file"
-      
-      # Check if it's a sensitive variable that might contain a key/password
-      if [[ "$VAR_NAME" == *"KEY"* ]] || [[ "$VAR_NAME" == *"SECRET"* ]] || [[ "$VAR_NAME" == *"PASSWORD"* ]]; then
-        echo "Setting secret: $VAR_NAME"
-        # Use --no-prompt to avoid interactive prompts
-        azd env set-secret "$VAR_NAME" "$VAR_VALUE" --no-prompt
-      else
+      # Set the variable in azd environment - SKIP secrets from .env
+      # This is to avoid Key Vault interaction issues
+      if [[ "$VAR_NAME" != *"KEY"* ]] && [[ "$VAR_NAME" != *"SECRET"* ]] && [[ "$VAR_NAME" != *"PASSWORD"* ]]; then
+        echo "Setting $VAR_NAME from .env file"
         azd env set "$VAR_NAME" "$VAR_VALUE"
+      else
+        echo "Skipping sensitive variable $VAR_NAME (will be set during azd up prompt)"
       fi
     fi
   done < .env
@@ -59,11 +56,6 @@ fi
 # This ensures that variables from .env are mapped to what Azure templates expect
 
 # Map OpenAI variables if they exist in different format
-if [ -n "$(azd env get OPENAI_API_KEY 2>/dev/null)" ] && [ -z "$(azd env get AZURE_OPENAI_API_KEY 2>/dev/null)" ]; then
-  echo "Mapping OPENAI_API_KEY to AZURE_OPENAI_API_KEY"
-  azd env set-secret AZURE_OPENAI_API_KEY "$(azd env get-secret OPENAI_API_KEY)" --no-prompt
-fi
-
 if [ -n "$(azd env get OPENAI_ENDPOINT 2>/dev/null)" ] && [ -z "$(azd env get AZURE_OPENAI_ENDPOINT 2>/dev/null)" ]; then
   echo "Mapping OPENAI_ENDPOINT to AZURE_OPENAI_ENDPOINT"
   azd env set AZURE_OPENAI_ENDPOINT "$(azd env get OPENAI_ENDPOINT)"
@@ -106,6 +98,12 @@ if [ -n "$(azd env get CREATE_NEW_OPENAI_RESOURCE 2>/dev/null)" ]; then
 else
   echo "Setting default createNewOpenAIResource parameter to false"
   azd env set CREATE_NEW_OPENAI_RESOURCE "false"
+fi
+
+# Set API version if not already set
+if [ -z "$(azd env get AZURE_OPENAI_API_VERSION 2>/dev/null)" ]; then
+  echo "Setting default AZURE_OPENAI_API_VERSION to 2024-08-01-preview"
+  azd env set AZURE_OPENAI_API_VERSION "2024-08-01-preview"
 fi
 
 echo "Pre-provisioning tasks completed successfully."
