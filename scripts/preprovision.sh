@@ -41,9 +41,11 @@ if [ -f .env ]; then
       
       # Check if it's a sensitive variable that might contain a key/password
       if [[ "$VAR_NAME" == *"KEY"* ]] || [[ "$VAR_NAME" == *"SECRET"* ]] || [[ "$VAR_NAME" == *"PASSWORD"* ]]; then
-        azd env set-secret $VAR_NAME "$VAR_VALUE"
+        echo "Setting secret: $VAR_NAME"
+        # Use --no-prompt to avoid interactive prompts
+        azd env set-secret "$VAR_NAME" "$VAR_VALUE" --no-prompt
       else
-        azd env set $VAR_NAME "$VAR_VALUE"
+        azd env set "$VAR_NAME" "$VAR_VALUE"
       fi
     fi
   done < .env
@@ -59,7 +61,7 @@ fi
 # Map OpenAI variables if they exist in different format
 if [ -n "$(azd env get OPENAI_API_KEY 2>/dev/null)" ] && [ -z "$(azd env get AZURE_OPENAI_API_KEY 2>/dev/null)" ]; then
   echo "Mapping OPENAI_API_KEY to AZURE_OPENAI_API_KEY"
-  azd env set-secret AZURE_OPENAI_API_KEY "$(azd env get-secret OPENAI_API_KEY)"
+  azd env set-secret AZURE_OPENAI_API_KEY "$(azd env get-secret OPENAI_API_KEY)" --no-prompt
 fi
 
 if [ -n "$(azd env get OPENAI_ENDPOINT 2>/dev/null)" ] && [ -z "$(azd env get AZURE_OPENAI_ENDPOINT 2>/dev/null)" ]; then
