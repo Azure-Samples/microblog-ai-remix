@@ -20,6 +20,12 @@
     "azureOpenAIApiVersion": {
       "value": "${AZURE_OPENAI_API_VERSION=2024-08-01-preview}"
     },
+    "createNewOpenAIResource": {
+      "value": "${CREATE_NEW_OPENAI_RESOURCE=false}"
+    },
+    "openAIResourceName": {
+      "value": "${AZURE_OPENAI_RESOURCE_NAME}"
+    },
     "containerRegistryName": {
       "value": "${AZURE_CONTAINER_REGISTRY_NAME}"
     },

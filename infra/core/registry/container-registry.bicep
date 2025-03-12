@@ -43,14 +43,10 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
     publicNetworkAccess: 'Enabled'
     networkRuleBypassOptions: 'AzureServices'
     zoneRedundancy: 'Disabled'
-    anonymousPullEnabled: false
   }
 }
 
-// Outputs
+// Outputs não sensíveis apenas
 output id string = containerRegistry.id
 output name string = containerRegistry.name
 output loginServer string = containerRegistry.properties.loginServer
-output username string = adminUserEnabled ? containerRegistry.listCredentials().username : ''
-@secure()
-output password string = adminUserEnabled ? containerRegistry.listCredentials().passwords[0].value : ''

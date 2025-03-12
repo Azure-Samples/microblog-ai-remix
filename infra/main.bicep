@@ -31,6 +31,12 @@ param azureOpenAIDeploymentName string
 @description('Azure OpenAI API Version')
 param azureOpenAIApiVersion string = '2024-08-01-preview'
 
+@description('Flag to indicate whether to create a new Azure OpenAI resource or use an existing one')
+param createNewOpenAIResource bool = false
+
+@description('Name for the Azure OpenAI resource if creating a new one')
+param openAIResourceName string = ''
+
 @description('Optionally create a managed identity for the container app')
 param managedIdentity bool = false
 
@@ -64,7 +70,9 @@ module logAnalyticsWorkspace './core/monitoring/log-analytics.bicep' = {
   name: 'log-analytics'
   scope: resourceGroup
   params: {
-    name: !empty(logAnalyticsWorkspaceName) ? logAnalyticsWorkspaceName : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    name: !empty(logAnalyticsWorkspaceName)
+      ? logAnalyticsWorkspaceName
+      : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
     location: location
     tags: tags
     sku: 'PerGB2018'
@@ -89,11 +97,27 @@ module containerAppsEnvironment './core/host/container-apps-environment.bicep' =
   name: 'container-apps-environment'
   scope: resourceGroup
   params: {
-    name: !empty(containerAppsEnvironmentName) ? containerAppsEnvironmentName : '${abbrs.appContainerAppsEnvironments}${resourceToken}'
+    name: !empty(containerAppsEnvironmentName)
+      ? containerAppsEnvironmentName
+      : '${abbrs.appContainerAppsEnvironments}${resourceToken}'
     location: location
     tags: tags
     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.id
     logAnalyticsWorkspaceSharedKey: logAnalyticsWorkspace.outputs.sharedKey
+  }
+}
+
+// Azure OpenAI Module (Optional)
+module openAI './core/ai/openai.bicep' = if (createNewOpenAIResource) {
+  name: 'openai'
+  scope: resourceGroup
+  params: {
+    name: !empty(openAIResourceName) ? openAIResourceName : '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    deploymentName: azureOpenAIDeploymentName
+    modelName: 'gpt-4o'
+    createNewOpenAIResource: createNewOpenAIResource
   }
 }
 
@@ -122,8 +146,8 @@ module containerApp './app/containerapp.bicep' = {
     containerRegistryPassword: registry.outputs.password
     applicationInsightsConnectionString: appInsights.outputs.connectionString
     azureOpenAIApiKey: azureOpenAIApiKey
-    azureOpenAIEndpoint: azureOpenAIEndpoint
-    azureOpenAIDeploymentName: azureOpenAIDeploymentName
+    azureOpenAIEndpoint: createNewOpenAIResource ? openAI.outputs.endpoint : azureOpenAIEndpoint
+    azureOpenAIDeploymentName: createNewOpenAIResource ? openAI.outputs.deploymentName : azureOpenAIDeploymentName
     azureOpenAIApiVersion: azureOpenAIApiVersion
     userAssignedIdentityId: managedIdentity ? containerAppIdentity.outputs.id : ''
     managedIdentity: managedIdentity
@@ -141,3 +165,4 @@ output AZURE_CONTAINER_APP_URI string = containerApp.outputs.uri
 output AZURE_RESOURCE_GROUP string = resourceGroup.name
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
+output AZURE_OPENAI_ENDPOINT string = createNewOpenAIResource ? openAI.outputs.endpoint : azureOpenAIEndpoint
