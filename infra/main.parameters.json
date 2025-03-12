@@ -18,7 +18,7 @@
       "value": "${AZURE_OPENAI_DEPLOYMENT_NAME}"
     },
     "azureOpenAIApiVersion": {
-      "value": "${AZURE_OPENAI_API_VERSION=2024-08-01-preview}"
+      "value": "${AZURE_OPENAI_API_VERSION=2024-05-01-preview}"
     },
     "createNewOpenAIResource": {
       "value": "${CREATE_NEW_OPENAI_RESOURCE=false}"

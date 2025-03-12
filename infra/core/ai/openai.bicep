@@ -1,19 +1,13 @@
-@description('Name of the Azure OpenAI resource')
+metadata description = 'Creates an Azure Cognitive Services instance.'
 param name string
-
-@description('Location for the Azure OpenAI resource')
 param location string = resourceGroup().location
-
-@description('Tags for the Azure OpenAI resource')
 param tags object = {}
 
-@description('SKU name for the Azure OpenAI resource')
-param skuName string = 'Standard'
+@description('The custom subdomain name used to access the API. Defaults to the value of the name parameter.')
+param customSubDomainName string = name
+param kind string = 'OpenAI'
 
-@description('SKU capacity for the Azure OpenAI resource')
-param skuCapacity int = 1
-
-@description('Deployment name for the model')
+@description('The deployment name for the model')
 param deploymentName string
 
 @description('Model name to deploy')
@@ -22,37 +16,46 @@ param modelName string = 'gpt-4o'
 @description('Indicates whether to create a new Azure OpenAI resource or use an existing one')
 param createNewOpenAIResource bool = false
 
-resource openAIAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = if (createNewOpenAIResource) {
+@allowed(['Enabled', 'Disabled'])
+param publicNetworkAccess string = 'Enabled'
+param sku object = {
+  name: 'S0'
+}
+
+param disableLocalAuth bool = false
+
+resource account 'Microsoft.CognitiveServices/accounts@2023-05-01' = if (createNewOpenAIResource) {
   name: name
   location: location
   tags: tags
-  kind: 'OpenAI'
-  sku: {
-    name: skuName
-    capacity: skuCapacity
+  kind: kind
+  identity: {
+    type: 'SystemAssigned'
   }
   properties: {
-    customSubDomainName: name
-    publicNetworkAccess: 'Enabled'
+    customSubDomainName: customSubDomainName
+    publicNetworkAccess: publicNetworkAccess
+    disableLocalAuth: disableLocalAuth
   }
+  sku: sku
 }
 
-resource openAIDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = if (createNewOpenAIResource) {
-  parent: openAIAccount
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = if (createNewOpenAIResource) {
+  parent: account
   name: deploymentName
-  sku: {
-    name: 'Standard'
-    capacity: 1
-  }
   properties: {
     model: {
       format: 'OpenAI'
       name: modelName
     }
   }
+  sku: {
+    name: 'Standard'
+    capacity: 20
+  }
 }
 
-// These outputs will be empty strings if createNewOpenAIResource is false
-output id string = createNewOpenAIResource ? openAIAccount.id : ''
-output endpoint string = createNewOpenAIResource ? openAIAccount.properties.endpoint : ''
-output deploymentName string = createNewOpenAIResource ? openAIDeployment.name : deploymentName
+output endpoint string = createNewOpenAIResource ? account.properties.endpoint : ''
+output id string = createNewOpenAIResource ? account.id : ''
+output name string = createNewOpenAIResource ? account.name : ''
+output deploymentName string = deploymentName

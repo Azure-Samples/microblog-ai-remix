@@ -1,6 +1,4 @@
 # PowerShell script for Windows environments
-
-# Stop on errors
 $ErrorActionPreference = "Stop"
 
 # Get resource information

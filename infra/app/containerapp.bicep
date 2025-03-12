@@ -10,15 +10,8 @@ param tags object = {}
 @description('Resource ID of the Container Apps Environment in which this app should be deployed')
 param containerAppsEnvironmentId string
 
-@description('Login server for the Container Registry')
-param containerRegistryLoginServer string
-
-@description('Username for the Container Registry')
-param containerRegistryUsername string
-
-@description('Password for the Container Registry')
-@secure()
-param containerRegistryPassword string
+@description('Name of the Container Registry')
+param containerRegistryName string
 
 @description('Connection string for Application Insights')
 @secure()
@@ -35,7 +28,7 @@ param azureOpenAIEndpoint string
 param azureOpenAIDeploymentName string
 
 @description('Azure OpenAI API Version')
-param azureOpenAIApiVersion string = '2024-08-01-preview'
+param azureOpenAIApiVersion string = '2024-05-01-preview'
 
 @description('Container image name')
 param imageName string = 'microblog-ai-remix'
@@ -61,6 +54,12 @@ param managedIdentity bool = false
 @description('Resource ID of the user assigned managed identity')
 param userAssignedIdentityId string = ''
 
+// Referência ao recurso existente
+resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: containerRegistryName
+}
+
+// Definir tipo de identidade
 var identityType = managedIdentity ? (!empty(userAssignedIdentityId) ? 'UserAssigned' : 'SystemAssigned') : 'None'
 var identityProperties = !empty(userAssignedIdentityId)
   ? {
@@ -72,6 +71,11 @@ var identityProperties = !empty(userAssignedIdentityId)
   : {
       type: identityType
     }
+
+// Obter as credenciais do registry
+var registryCredentials = registry.listCredentials()
+var registryUsername = registryCredentials.username
+var registryPassword = registryCredentials.passwords[0].value
 
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: name
@@ -96,15 +100,15 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       }
       registries: [
         {
-          server: containerRegistryLoginServer
-          username: containerRegistryUsername
+          server: registry.properties.loginServer
+          username: registryUsername
           passwordSecretRef: 'container-registry-password'
         }
       ]
       secrets: [
         {
           name: 'container-registry-password'
-          value: containerRegistryPassword
+          value: registryPassword
         }
         {
           name: 'azure-openai-api-key'
@@ -120,7 +124,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'main'
-          image: '${containerRegistryLoginServer}/${imageName}:${imageTag}'
+          image: '${registry.properties.loginServer}/${imageName}:${imageTag}'
           env: [
             {
               name: 'AZURE_OPENAI_API_KEY'

@@ -1,17 +1,7 @@
-@description('Name of the Container Registry')
 param name string
-
-@description('Location of the Container Registry')
 param location string = resourceGroup().location
-
-@description('Tags for the Container Registry')
 param tags object = {}
 
-@description('SKU for the Container Registry')
-@allowed(['Basic', 'Standard', 'Premium'])
-param sku string = 'Basic'
-
-@description('Enable admin user for the Container Registry')
 param adminUserEnabled bool = true
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
@@ -19,7 +9,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
   location: location
   tags: tags
   sku: {
-    name: sku
+    name: 'Basic'
   }
   properties: {
     adminUserEnabled: adminUserEnabled
@@ -46,7 +36,6 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
   }
 }
 
-// Outputs não sensíveis apenas
 output id string = containerRegistry.id
 output name string = containerRegistry.name
 output loginServer string = containerRegistry.properties.loginServer
