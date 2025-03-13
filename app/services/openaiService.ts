@@ -2,7 +2,7 @@ import {
   ChatCompletionSystemMessageParam,
   ChatCompletionUserMessageParam
 } from "openai/resources/index.mjs";
-import { AzureOpenAI } from "openai";
+import { OpenAI } from "openai";
 import "dotenv/config";
 
 interface GeneratedContent {
@@ -15,18 +15,17 @@ interface ToneGuidelines {
   [key: string]: string[];
 }
 
-class AzureOpenAIService {
-  private client: AzureOpenAI;
+class GitHubModelsService {
+  private client: OpenAI;
   private readonly toneGuidelines: ToneGuidelines;
+  private readonly modelName: string = "gpt-4o";
 
   constructor() {
     this.validateEnvVariables();
 
-    this.client = new AzureOpenAI({
-      apiKey: process.env.AZURE_OPENAI_API_KEY,
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-      apiVersion: process.env.AZURE_OPENAI_API_VERSION,
-      deployment: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+    this.client = new OpenAI({
+      baseURL: process.env.GITHUB_MODELS_ENDPOINT || "https://models.inference.ai.azure.com",
+      apiKey: process.env.GITHUB_TOKEN,
     });
 
     this.toneGuidelines = this.getToneGuidelines();
@@ -53,7 +52,7 @@ class AzureOpenAIService {
 
         const result = await this.client.chat.completions.create({
           messages: [systemMessage, userMessage],
-          model: "", // The model is specified in the deployment
+          model: this.modelName, // The model is specified in the deployment
           temperature: 0.7,
           max_tokens: 500,
           response_format: { type: "json_object" },
@@ -74,17 +73,8 @@ class AzureOpenAIService {
   }
 
   private validateEnvVariables() {
-    const requiredVars = [
-      "AZURE_OPENAI_ENDPOINT",
-      "AZURE_OPENAI_API_KEY",
-      "AZURE_OPENAI_DEPLOYMENT_NAME",
-      "AZURE_OPENAI_API_VERSION",
-    ];
-
-    for (const envVar of requiredVars) {
-      if (!process.env[envVar]) {
-        throw new Error(`${envVar} must be configured in environment variables`);
-      }
+    if (!process.env["GITHUB_TOKEN"]) {
+      throw new Error("GITHUB_TOKEN is not set");
     }
   }
 
@@ -188,4 +178,4 @@ class AzureOpenAIService {
   }
 }
 
-export const azureOpenAIService = new AzureOpenAIService();
+export const azureOpenAIService = new GitHubModelsService();
