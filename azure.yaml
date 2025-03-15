@@ -14,32 +14,41 @@ services:
     docker:
       path: Dockerfile
 hooks:
-  preprovision:
-    posix:
-      shell: sh
-      run: ./scripts/preprovision.sh
-      interactive: true
-      continueOnError: false
-    windows:
-      shell: pwsh
-      run: ./scripts/preprovision.ps1
-      interactive: true
-      continueOnError: false
-  predeploy:
-    posix:
-      shell: sh
-      run: ./scripts/prepdeploy.sh
-      interactive: true
-      continueOnError: false
-    windows:
-      shell: pwsh
-      run: ./scripts/prepdeploy.ps1
-      interactive: true
-      continueOnError: false
   postprovision:
     windows:
       shell: pwsh
-      run: azd env get-values > .env
+      run: |
+        Write-Host "Retrieving Azure OpenAI secrets from Key Vault..."
+        $keyVaultName = azd env get-values --query keyVaultName -o tsv
+        $openAiKey = az keyvault secret show --name AZURE_OPENAI_API_KEY --vault-name $keyVaultName --query value -o tsv
+        $openAiEndpoint = az keyvault secret show --name AZURE_OPENAI_ENDPOINT --vault-name $keyVaultName --query value -o tsv
+        $openAiDeployment = az keyvault secret show --name AZURE_OPENAI_DEPLOYMENT_NAME --vault-name $keyVaultName --query value -o tsv
+
+        if (-not $openAiKey -or -not $openAiEndpoint -or -not $openAiDeployment) {
+          Write-Error "ERROR: One or more OpenAI secrets were not retrieved correctly from Key Vault."
+          exit 1
+        }
+
+        azd env set AZURE_OPENAI_API_KEY $openAiKey
+        azd env set AZURE_OPENAI_ENDPOINT $openAiEndpoint
+        azd env set AZURE_OPENAI_DEPLOYMENT_NAME $openAiDeployment
+        Write-Host "✅ Successfully retrieved and stored OpenAI secrets in .env"
+
     posix:
       shell: sh
-      run: azd env get-values > .env
+      run: |
+        echo "Retrieving Azure OpenAI secrets from Key Vault..."
+        keyVaultName=$(azd env get-values --query keyVaultName -o tsv)
+        openAiKey=$(az keyvault secret show --name AZURE_OPENAI_API_KEY --vault-name $keyVaultName --query value -o tsv)
+        openAiEndpoint=$(az keyvault secret show --name AZURE_OPENAI_ENDPOINT --vault-name $keyVaultName --query value -o tsv)
+        openAiDeployment=$(az keyvault secret show --name AZURE_OPENAI_DEPLOYMENT_NAME --vault-name $keyVaultName --query value -o tsv)
+
+        if [ -z "$openAiKey" ] || [ -z "$openAiEndpoint" ] || [ -z "$openAiDeployment" ]; then
+          echo "ERROR: One or more OpenAI secrets were not retrieved correctly from Key Vault."
+          exit 1
+        fi
+
+        azd env set AZURE_OPENAI_API_KEY "$openAiKey"
+        azd env set AZURE_OPENAI_ENDPOINT "$openAiEndpoint"
+        azd env set AZURE_OPENAI_DEPLOYMENT_NAME "$openAiDeployment"
+        echo "✅ Successfully retrieved and stored OpenAI secrets in .env"

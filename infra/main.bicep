@@ -148,6 +148,21 @@ module containerApp './app/containerapp.bicep' = {
   }
 }
 
+module keyvault 'core/security/keyvault.bicep' = {
+  name: 'keyvault-module'
+  scope: rg
+  params: {
+    keyVaultName: 'microblog-ai-kv'
+    location: location
+    openAiAccountName: openAIResourceName
+    createNewOpenAIResource: createNewOpenAIResource
+    azureOpenAIApiKey: azureOpenAIApiKey
+    azureOpenAIEndpoint: azureOpenAIEndpoint
+    azureOpenAIDeploymentName: azureOpenAIDeploymentName
+    objectId: managedIdentity ? containerAppIdentity.outputs.principalId : subscription().subscriptionId
+  }
+}
+
 // Outputs
 output AZURE_LOCATION string = location
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerAppsEnvironment.outputs.name
@@ -160,3 +175,6 @@ output AZURE_RESOURCE_GROUP string = resourceGroupName
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
 output AZURE_OPENAI_ENDPOINT string = createNewOpenAIResource ? openAI.outputs.endpoint : azureOpenAIEndpoint
+output keyVaultName string = keyvault.outputs.keyVaultName
+output openAiKeySecretUri string = keyvault.outputs.openAiKeySecretUri
+output openAiEndpointSecretUri string = keyvault.outputs.openAiEndpointSecretUri
