@@ -19,7 +19,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: Production
     env:
       # Azure Authentication
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -36,21 +36,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Log in with Azure (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install azd
-        uses: Azure/setup-azd@v2
-
-      - name: Log in with Azure
-        run: |
-          azd auth login \
-            --client-id "$AZURE_CLIENT_ID" \
-            --federated-credential-provider "github" \
-            --tenant-id "$AZURE_TENANT_ID"
-        shell: bash  
 
       - name: Install dependencies
         run: npm ci
@@ -59,14 +58,4 @@ jobs:
         run: npm run build
 
       - name: Provision Infrastructure
-        run: azd provision --no-prompt
-        env:
-          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
-
-      - name: Deploy Application
-        run: azd deploy --no-prompt
-        env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
-
+        run: azd provision --no-prompt          
