@@ -53,7 +53,12 @@ jobs:
           
           echo "Setting active subscription to: $AZURE_SUB_ID"
           az account set --subscription "$AZURE_SUB_ID"
-
+      
+      - name: Debug Subscription ID
+          run: echo "AZURE_SUB_ID: $AZURE_SUB_ID"
+          env:
+            AZURE_SUB_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
