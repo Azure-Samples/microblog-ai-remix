@@ -1,30 +1,23 @@
 name: Deploy to Azure Container Apps
 
-# Run when commits are pushed to feat/migrate-swa-to-aca
 on:
   workflow_dispatch:
   push:
-    # Run when commits are pushed to mainline branch (main or master)
-    # Set this to the mainline branch you are using
     branches:
       - feat/migrate-swa-to-aca
 
-# Set up permissions for deploying with secretless Azure federated credentials
-# https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux#set-up-azure-login-with-openid-connect-authentication
 permissions:
   id-token: write
   contents: read
-
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      # Configurações globais para todo o pipeline
       AZURE_ENV_NAME: microblog-ai-aca-02
       AZURE_LOCATION: eastus2
-      # Azure OpenAI Configuration
       AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
-      AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,59 +25,53 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v2
 
-      - name: Log in with Azure
+      - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Debug Auth Identity
+      - name: Validate Authentication Context
         run: |
-          echo "Using identity: $(az account show --query user.name -o tsv)"
-          echo "Subscription: $(az account show --query name -o tsv)"
+          echo "Authenticated as: $(az account show --query user.name -o tsv)"
+          echo "Active subscription: $(az account show --query name -o tsv)"
 
-      - name: Azure CLI Command
+      - name: Set Azure Subscription Context
+        env:
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
-          echo "Current Azure context:"
-          az account show
-            
-          if [[ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]]; then
-            echo "Error: AZURE_SUBSCRIPTION_ID is empty or not defined"
+          if [[ -z "$SUBSCRIPTION_ID" ]]; then
+            echo "Error: AZURE_SUBSCRIPTION_ID environment variable is not defined"
             exit 1
           fi
-            
-          echo "Setting subscription context to: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-  
+          echo "Setting active subscription to: $SUBSCRIPTION_ID"
+          az account set --subscription "$SUBSCRIPTION_ID"
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
         env:
+          # Propagação de variáveis de ambiente para o contexto NPM
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_ENV_NAME: microblog-ai-aca-02
-          AZURE_LOCATION: eastus2
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
           AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
 
       - name: Build Application
         run: npm run build
 
-      - name: Provision Infrastructure
+      - name: Provision Azure Infrastructure
         run: azd provision --no-prompt
         env:
+          # Injeção de variáveis de contexto para o AZD CLI
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_ENV_NAME: microblog-ai-aca-02
-          AZURE_LOCATION: eastus2
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
-          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}          
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
