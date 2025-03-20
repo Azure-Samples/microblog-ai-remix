@@ -27,7 +27,6 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
-      AZURE_LOCATION: eastus2
       # Azure OpenAI Configuration
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
