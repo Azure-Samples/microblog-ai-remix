@@ -45,8 +45,12 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true
 
+      - name: Azure CLI Command
+        run: |
+          az account show
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -54,9 +58,29 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: microblog-ai-aca-02
+          AZURE_LOCATION: eastus2
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
 
       - name: Build Application
         run: npm run build
 
       - name: Provision Infrastructure
-        run: azd provision --no-prompt          
+        run: azd provision --no-prompt
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: microblog-ai-aca-02
+          AZURE_LOCATION: eastus2
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}          
