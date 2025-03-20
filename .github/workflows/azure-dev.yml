@@ -44,8 +44,16 @@ jobs:
 
       - name: Azure CLI Command
         run: |
+          echo "Current Azure context:"
           az account show
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            
+          if [[ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]]; then
+            echo "Error: AZURE_SUBSCRIPTION_ID is empty or not defined"
+            exit 1
+          fi
+            
+          echo "Setting subscription context to: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
   
       - name: Install Node.js
         uses: actions/setup-node@v4
