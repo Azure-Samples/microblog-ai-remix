@@ -36,24 +36,23 @@ jobs:
           echo "Active subscription: $(az account show --query name -o tsv)"
 
       - name: Set Azure Subscription Context
+        env:
+          AZURE_SUB_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
-          # Injeção direta na camada de shell
-          SUBSCRIPTION_ID='${{ secrets.AZURE_SUBSCRIPTION_ID }}'
-          
-          # Validação mais rigorosa
-          if [[ -z "$SUBSCRIPTION_ID" || "$SUBSCRIPTION_ID" == "null" ]]; then
-            echo "Error: AZURE_SUBSCRIPTION_ID value is invalid or empty"
+          # Acesso via variável de ambiente explícita
+          if [[ -z "$AZURE_SUB_ID" || "$AZURE_SUB_ID" == "null" ]]; then
+            echo "Error: Subscription ID is invalid or empty"
             exit 1
           fi
           
           # Validação de formato UUID/GUID
-          if ! [[ $SUBSCRIPTION_ID =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
-            echo "Error: AZURE_SUBSCRIPTION_ID does not appear to be a valid UUID"
+          if ! [[ $AZURE_SUB_ID =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            echo "Error: Subscription ID does not appear to be a valid UUID"
             exit 1
           fi
           
-          echo "Setting active subscription to: $SUBSCRIPTION_ID"
-          az account set --subscription "$SUBSCRIPTION_ID"
+          echo "Setting active subscription to: $AZURE_SUB_ID"
+          az account set --subscription "$AZURE_SUB_ID"
 
       - name: Install Node.js
         uses: actions/setup-node@v4
