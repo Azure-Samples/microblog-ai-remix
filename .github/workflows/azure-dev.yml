@@ -32,12 +32,10 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v2
 
-      - name: Log in with Azure (OIDC)
+      - name: Log in with Azure
         uses: azure/login@v1
-        env:
-          AZURE_CREDS: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":" ","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}"}'
         with:
-          creds: ${{ env.AZURE_CREDS }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Debug Auth Identity
         run: |
