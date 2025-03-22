@@ -1,10 +1,12 @@
 {
-  "appContainerApps": "app",
-  "appContainerAppsEnvironments": "cae",
+  "appContainerApps": "ca",
+  "appManagedEnvironments": "cae",
   "containerRegistryRegistries": "acr",
-  "insightsComponents": "ai",
+  "insightsComponents": "appi",
   "operationalInsightsWorkspaces": "log",
   "resourcesResourceGroups": "rg",
+  "keyVaultVaults": "kv",
   "managedIdentityUserAssignedIdentities": "id",
-  "cognitiveServicesAccounts": "cog"
+  "cognitiveServicesAccounts": "cog",
+  "portalDashboards": "dash"
 }

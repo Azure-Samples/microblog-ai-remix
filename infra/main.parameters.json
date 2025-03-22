@@ -8,6 +8,17 @@
     "location": {
       "value": "${AZURE_LOCATION=eastus}"
     },
+    "microblogAppExists": {
+      "value": "${SERVICE_MICROBLOG_APP_RESOURCE_EXISTS=false}"
+    },
+    "microblogAppDefinition": {
+      "value": {
+        "settings": []
+      }
+    },
+    "principalId": {
+      "value": "${AZURE_PRINCIPAL_ID}"
+    },
     "azureOpenAIApiKey": {
       "value": "${AZURE_OPENAI_API_KEY}"
     },
@@ -15,7 +26,7 @@
       "value": "${AZURE_OPENAI_ENDPOINT}"
     },
     "azureOpenAIDeploymentName": {
-      "value": "${AZURE_OPENAI_DEPLOYMENT_NAME}"
+      "value": "${AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o}"
     },
     "azureOpenAIApiVersion": {
       "value": "${AZURE_OPENAI_API_VERSION=2024-05-01-preview}"
@@ -23,26 +34,11 @@
     "createNewOpenAIResource": {
       "value": "${CREATE_NEW_OPENAI_RESOURCE=false}"
     },
-    "openAIResourceName": {
-      "value": "${AZURE_OPENAI_RESOURCE_NAME}"
+    "openAiLocation": {
+      "value": "${AZURE_OPENAI_LOCATION=eastus}"
     },
-    "containerRegistryName": {
-      "value": "${AZURE_CONTAINER_REGISTRY_NAME}"
-    },
-    "logAnalyticsWorkspaceName": {
-      "value": "${AZURE_LOG_ANALYTICS_NAME}"
-    },
-    "applicationInsightsName": {
-      "value": "${AZURE_APPLICATION_INSIGHTS_NAME}"
-    },
-    "containerAppsEnvironmentName": {
-      "value": "${AZURE_CONTAINER_APPS_ENVIRONMENT_NAME}"
-    },
-    "containerAppName": {
-      "value": "${AZURE_CONTAINER_APP_NAME}"
-    },
-    "managedIdentity": {
-      "value": "${MANAGED_IDENTITY=false}"
+    "runningOnGh": {
+      "value": "${GITHUB_ACTIONS}"
     }
   }
 }
