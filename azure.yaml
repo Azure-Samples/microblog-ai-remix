@@ -10,6 +10,8 @@ services:
     language: js
     docker:
       path: Dockerfile
+      remoteBuild: true
+      
 infra:
   provider: bicep
   path: ./infra
@@ -22,10 +24,3 @@ hooks:
     posix:
       shell: sh
       run: azd env get-values > .env
-  predeploy:
-    windows:
-      shell: pwsh
-      run: npm ci && npm run build:all
-    posix:
-      shell: sh
-      run: npm ci && npm run build:all
