@@ -1,38 +1,39 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-	"name": "Remix TypeScript Development",
-	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm",
-	"features": {
-		"ghcr.io/devcontainers/features/azure-cli:1": {
-			"version": "latest",
-			"installBicep": true
-		},
-		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers/features/powershell:1": {},
-		"ghcr.io/azure/azure-dev/azd:latest": {}
-	},
-	"forwardPorts": [
-		3000,
-		5173
-	],
-	"postCreateCommand": "npm install",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-azuretools.azure-dev",
-				"ms-azuretools.vscode-bicep",
-				"GitHub.copilot",
-				"dbaeumer.vscode-eslint",
-				"esbenp.prettier-vscode",
-				"bradlc.vscode-tailwindcss",
-				"ms-azuretools.vscode-azurestaticwebapps",
-				"GitHub.copilot-chat",
-				"ms-azuretools.vscode-azure-github-copilot",
-				"ms-azuretools.vscode-azureresourcegroups"
-			]
-		}
-	}
+  "name": "Remix TypeScript Development",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": "false"
+    },
+    "ghcr.io/devcontainers/features/powershell:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "version": "latest",
+      "installBicep": true
+    },
+    "ghcr.io/azure/azure-dev/azd:latest": {}
+  },
+  "forwardPorts": [3000, 5173],
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.azure-dev",
+        "ms-azuretools.vscode-bicep",
+        "GitHub.copilot",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "GitHub.copilot-chat",
+        "ms-azuretools.vscode-azure-github-copilot"
+      ]
+    }
+  },
+  // Set minimal host requirements for the container.
+  "hostRequirements": {
+    "memory": "8gb"
+  }
 }
 // Features to add to the dev container. More info: https://containers.dev/features.
 // "features": {},

@@ -40,7 +40,7 @@
     "vite.config.ts",
     "types/**/*.d.ts",
     "tailwind.config.ts"
-  ],
+, "postcss.config.cjs"  ],
   "exclude": [
     "node_modules",
     "build",

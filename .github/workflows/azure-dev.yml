@@ -1,0 +1,105 @@
+name: Deploy to Azure Container Apps
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION || 'eastus' }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
+      AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_DEPLOYMENT_NAME: ${{ vars.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4o' }}
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+      
+      - name: Login to Azure (Federated Credentials)
+        if: env.AZURE_CLIENT_ID != ''
+        run: |
+          azd auth login \
+          --client-id "$AZURE_CLIENT_ID" \
+          --federated-credential-provider "github" \
+          --tenant-id "$AZURE_TENANT_ID"
+      
+      - name: Login to Azure (Service Principal Credentials)
+        if: env.AZURE_CLIENT_ID == ''
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Set Azure Subscription Context
+        run: |
+          if [ -z "$AZURE_SUBSCRIPTION_ID" ] || [ "$AZURE_SUBSCRIPTION_ID" == "null" ]; then
+            echo "Error: Subscription ID is invalid or empty"
+            exit 1
+          fi
+          echo "Setting active subscription to: $AZURE_SUBSCRIPTION_ID"
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Validate Environment Variables
+        run: |
+          if [ -z "$AZURE_ENV_NAME" ]; then
+            echo "Setting default environment name"
+            export AZURE_ENV_NAME="microblog-ai-$(date +%Y%m%d%H%M)"
+            echo "AZURE_ENV_NAME=$AZURE_ENV_NAME" >> $GITHUB_ENV
+          fi
+      
+      - name: Provision Azure Infrastructure
+        run: azd provision --no-prompt
+        env:
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_OPENAI_API_KEY: ${{ env.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ env.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ env.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          AZURE_OPENAI_API_VERSION: ${{ env.AZURE_OPENAI_API_VERSION }}
+          CREATE_NEW_OPENAI_RESOURCE: ${{ vars.CREATE_NEW_OPENAI_RESOURCE || 'false' }}
+      
+      - name: Build and Deploy Application
+        run: azd deploy --no-prompt
+        env:
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_OPENAI_API_KEY: ${{ env.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ env.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ env.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          AZURE_OPENAI_API_VERSION: ${{ env.AZURE_OPENAI_API_VERSION }}
+      
+      - name: Output Application URL
+        run: |
+          APP_URL=$(azd env get-values --query "AZURE_CONTAINER_APP_URI" -o tsv)
+          echo "Application deployed to: $APP_URL"
+          echo "AZURE_CONTAINER_APP_URI=$APP_URL" >> $GITHUB_ENV
+      
+      - name: Summary
+        run: |
+          echo "# Deployment Complete :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Application URL: [${AZURE_CONTAINER_APP_URI}](${AZURE_CONTAINER_APP_URI})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Resource Group: \`rg-${AZURE_ENV_NAME}\`" >> $GITHUB_STEP_SUMMARY
