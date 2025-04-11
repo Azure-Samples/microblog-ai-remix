@@ -1,66 +1,44 @@
+# ------------------------------
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+# ------------------------------
+  FROM node:20-alpine AS builder
 
-# Set environment variables
-ENV NODE_ENV=production
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-COPY server/package*.json ./server/
-
-# Install dependencies in root (changed from npm ci to npm install)
-RUN npm install
-
-# Install dependencies in server directory (changed from npm ci to npm install)
-WORKDIR /app/server
-RUN npm install
-WORKDIR /app
-
-# Copy the rest of the application code
-COPY . .
-
-# Debug: List files in server/src
-RUN ls -la server/src/
-
-# Build the application
-RUN npm run build:all
-
-# Debug: List files in build
-RUN ls -la server/dist/
-
-# Stage 2: Run the application
-FROM node:20-alpine AS runtime
-
-# Set environment variables
-ENV NODE_ENV=production
-
-# Port exposed
-ENV PORT=80
-
-# create app directory
-WORKDIR /app
-
-COPY package*.json ./
-COPY server/package*.json ./server/
-
-# Install production dependencies (changed from npm ci to npm install)
-RUN npm install --omit=dev
-
-WORKDIR /app/server
-RUN npm install --omit=dev
-
-WORKDIR /app
-
-# Copy built application from build stage
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/public ./public
-
-# Debug: List files in server/dist
-RUN ls -la server/dist/
-
-EXPOSE 80
-
-CMD [ "node", "server/dist/index.js"]
+  # Definimos NODE_ENV=development para garantir que devDependencies sejam instaladas
+  ENV NODE_ENV=development
+  WORKDIR /app
+  
+  # Copia somente os arquivos de pacote, para aproveitar cache de build
+  COPY package*.json ./
+  COPY server/package*.json ./server/
+  
+  # Instala todas as dependências (prod + dev)
+  RUN npm install
+  
+  # Copia todo o restante do código
+  COPY . .
+  
+  # Executa o build (Remix + Tailwind + etc.)
+  RUN npm run build:all
+  
+  # ------------------------------
+  # Stage 2: Runtime
+  # ------------------------------
+  FROM node:20-alpine AS runtime
+  
+  ENV NODE_ENV=production
+  ENV PORT=80
+  WORKDIR /app
+  
+  # Copiamos os package.jsons para instalar apenas as dependências de produção
+  COPY package*.json ./
+  COPY server/package*.json ./server/
+  RUN npm install --omit=dev
+  
+  # Copiamos do “builder” somente os artefatos gerados e o que for preciso
+  COPY --from=builder /app/build ./build
+  COPY --from=builder /app/server/dist ./server/dist
+  COPY --from=builder /app/public ./public
+  
+  EXPOSE 80
+  CMD [ "node", "server/dist/index.js" ]
+  
