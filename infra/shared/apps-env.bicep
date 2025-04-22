@@ -1,3 +1,9 @@
+@description('Virtual Network Name')
+param vnetName string
+
+@description('Infrastructure Subnet Name')
+param infraSubnetName string = 'infrastructure-subnet'
+
 param name string
 param location string = resourceGroup().location
 param tags object = {}
@@ -13,7 +19,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
   name: applicationInsightsName
 }
 
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: name
   location: location
   tags: tags
@@ -27,6 +33,10 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01'
     }
     daprAIConnectionString: !empty(applicationInsightsName) ? applicationInsights.properties.ConnectionString : null
     zoneRedundant: false
+    vnetConfiguration: {
+      internal: true
+      infrastructureSubnetId: resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, infraSubnetName)
+    }
   }
 }
 
