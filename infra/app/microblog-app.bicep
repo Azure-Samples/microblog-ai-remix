@@ -19,11 +19,11 @@ param azureOpenAIApiKey string = ''
 @secure()
 param azureOpenAIEndpoint string = ''
 
-@description('Whether the deployment is running on GitHub Actions')
-param runningOnGh string = ''
+// @description('Whether the deployment is running on GitHub Actions')
+// param runningOnGh string = ''
 
-@description('Id of the user or app to assign application roles')
-param principalId string = ''
+// @description('Id of the user or app to assign application roles')
+// param principalId string = ''
 
 @secure()
 param appDefinition object

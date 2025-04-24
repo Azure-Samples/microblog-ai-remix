@@ -8,5 +8,6 @@
   "keyVaultVaults": "kv",
   "managedIdentityUserAssignedIdentities": "id",
   "cognitiveServicesAccounts": "cog",
-  "portalDashboards": "dash"
+  "portalDashboards": "dash",
+  "networkVirtualNetworks": "vnet"
 }

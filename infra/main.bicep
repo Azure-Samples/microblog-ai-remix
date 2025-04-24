@@ -14,9 +14,7 @@ param runningOnGh string = ''
 
 param microblogAppExists bool = false
 @secure()
-param microblogAppDefinition object = {
-  settings: []
-}
+param microblogAppDefinition object
 
 @description('Id of the user ir app to assign application roles')
 param principalId string = ''
@@ -105,6 +103,24 @@ module keyVault './shared/keyvault.bicep' = {
   scope: rg
 }
 
+// Virtual Network resource
+module vnet './shared/vnet.bicep' = {
+  name: 'vnet'
+  params: {
+    name: '${abbrs.networkVirtualNetworks}${resourceToken}'
+    location: location
+    tags: tags
+    addressPrefix: '10.0.0.0/16'
+    subnets: [
+      {
+        name: 'infrastructure-subnet'
+        addressPrefix: '10.0.0.0/23'
+      }
+    ]
+  }
+  scope: rg
+}
+
 // Container Apps Environment 
 module appsEnv './shared/apps-env.bicep' = {
   name: 'apps-env'
@@ -114,6 +130,8 @@ module appsEnv './shared/apps-env.bicep' = {
     tags: tags
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     logAnalyticsWorkspaceName: monitoring.outputs.logAnalyticsWorkspaceName
+    vnetName: vnet.outputs.name
+    infraSubnetName: 'infrastructure-subnet'
   }
   scope: rg
 }
@@ -176,8 +194,6 @@ module microblogApp './app/microblog-app.bicep' = {
     
     // Deployment control parameters
     exists: microblogAppExists
-    principalId: principalId
-    runningOnGh: runningOnGh
     
     // Application configuration
     appDefinition: union(microblogAppDefinition, {
@@ -210,11 +226,7 @@ module microblogApp './app/microblog-app.bicep' = {
     })
   }
   scope: rg
-  dependsOn: [
-    // Ensure Key Vault secrets are created before Container App deployment
-    openAiKeySecret
-    openAiEndpointSecret
-  ]
+  dependsOn: [openAiKeySecret, openAiEndpointSecret]
 }
 
 // Add OpenAI RBAC Roles
@@ -247,14 +259,9 @@ module openAiKeySecret 'shared/keyvault-secret.bicep' = {
   params: {
     keyVaultName: keyVault.outputs.name
     secretName: 'AZURE-OPENAI-API-KEY'
-    secretValue: createNewOpenAIResource 
-      ? listKeys(resourceId('Microsoft.CognitiveServices/accounts', '${abbrs.cognitiveServicesAccounts}${resourceToken}'), '2023-05-01').key1 
-      : azureOpenAIApiKey
+    secretValue: createNewOpenAIResource ? openAi.outputs.apiKey : azureOpenAIApiKey
   }
   scope: rg
-  dependsOn: [
-    keyVault
-  ]
 }
 
 module openAiEndpointSecret 'shared/keyvault-secret.bicep' = {
@@ -262,14 +269,9 @@ module openAiEndpointSecret 'shared/keyvault-secret.bicep' = {
   params: {
     keyVaultName: keyVault.outputs.name
     secretName: 'AZURE-OPENAI-ENDPOINT'
-    secretValue: createNewOpenAIResource 
-      ? openAi.outputs.endpoint 
-      : azureOpenAIEndpoint
+    secretValue: createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
   }
   scope: rg
-  dependsOn: [
-    keyVault
-  ]
 }
 
 // Outputs
