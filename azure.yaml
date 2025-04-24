@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: microblog-ai-remix
+metadata:
+  template: microblog-ai-remix
+services:
+  microblog-ai-remix:
+    project: .
+    host: containerapp
+    language: js
+    docker:
+      path: Dockerfile
+      remoteBuild: true
+      
+infra:
+  provider: bicep
+  path: ./infra
+  module: main
+hooks:
+  postprovision:
+    windows:
+      shell: pwsh
+      run: azd env get-values > .env
+    posix:
+      shell: sh
+      run: azd env get-values > .env
