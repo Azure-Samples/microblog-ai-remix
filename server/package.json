@@ -15,7 +15,7 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "@remix-run/express": "^2.16.0",
+    "@remix-run/express": "^2.16.5",
     "compression": "^1.8.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
