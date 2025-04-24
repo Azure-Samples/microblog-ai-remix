@@ -20,10 +20,6 @@ param microblogAppDefinition object
 param principalId string = ''
 
 // Azure OpenAI parameters
-@description('Azure OpenAI API Key (leave empty if using Managed Identity)')
-@secure()
-param azureOpenAIApiKey string
-
 @description('Azure OpenAI Endpoint URL')
 param azureOpenAIEndpoint string = ''
 
@@ -189,8 +185,12 @@ module microblogApp './app/microblog-app.bicep' = {
     containerAppsEnvironmentName: appsEnv.outputs.name
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     keyVaultName: keyVault.outputs.name
-    azureOpenAIApiKey: azureOpenAIApiKey
-    azureOpenAIEndpoint: createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
+    
+    // Key Vault secret names
+    openAiApiKeySecretName: 'azure-openai-api-key'
+    openAiEndpointSecretName: 'azure-openai-endpoint'
+    openAiDeploymentNameSecretName: 'azure-openai-deployment-name'
+    openAiApiVersionSecretName: 'azure-openai-api-version'
     
     // Deployment control parameters
     exists: microblogAppExists
@@ -207,9 +207,8 @@ module microblogApp './app/microblog-app.bicep' = {
           name: 'AZURE_KEY_VAULT_ENDPOINT' 
           value: keyVault.outputs.endpoint
         }
-        // OpenAI configuration parameters
-        // Note: These are now referenced via Key Vault in the container
-        // but we maintain them in appDefinition for orchestration purposes
+        // OpenAI configuration parameters - included here for orchestration purposes
+        // These are now set as Key Vault secrets and referenced as container app environment variables
         {
           name: 'AZURE_OPENAI_DEPLOYMENT_NAME' 
           value: azureOpenAIDeploymentName
@@ -226,7 +225,7 @@ module microblogApp './app/microblog-app.bicep' = {
     })
   }
   scope: rg
-  dependsOn: [openAiKeySecret, openAiEndpointSecret]
+  dependsOn: [openAiKeySecret, openAiEndpointSecret, openAiDeploymentNameSecret, openAiApiVersionSecret]
 }
 
 // Add OpenAI RBAC Roles
@@ -258,8 +257,8 @@ module openAiKeySecret 'shared/keyvault-secret.bicep' = {
   name: 'openai-key-secret'
   params: {
     keyVaultName: keyVault.outputs.name
-    secretName: 'AZURE-OPENAI-API-KEY'
-    secretValue: createNewOpenAIResource ? openAi.outputs.apiKey : azureOpenAIApiKey
+    secretName: 'azure-openai-api-key'
+    secretValue: createNewOpenAIResource ? openAi.outputs.apiKey : ''
   }
   scope: rg
 }
@@ -268,8 +267,29 @@ module openAiEndpointSecret 'shared/keyvault-secret.bicep' = {
   name: 'openai-endpoint-secret'
   params: {
     keyVaultName: keyVault.outputs.name
-    secretName: 'AZURE-OPENAI-ENDPOINT'
+    secretName: 'azure-openai-endpoint'
     secretValue: createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
+  }
+  scope: rg
+}
+
+// Add deployment name and API version as secrets in Key Vault
+module openAiDeploymentNameSecret 'shared/keyvault-secret.bicep' = {
+  name: 'openai-deployment-name-secret'
+  params: {
+    keyVaultName: keyVault.outputs.name
+    secretName: 'azure-openai-deployment-name'
+    secretValue: azureOpenAIDeploymentName
+  }
+  scope: rg
+}
+
+module openAiApiVersionSecret 'shared/keyvault-secret.bicep' = {
+  name: 'openai-api-version-secret'
+  params: {
+    keyVaultName: keyVault.outputs.name
+    secretName: 'azure-openai-api-version'
+    secretValue: azureOpenAIApiVersion
   }
   scope: rg
 }
@@ -291,7 +311,7 @@ output AZURE_KEY_VAULT_ENDPOINT string = keyVault.outputs.endpoint
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
 
 // OpenAI outputs
-output AZURE_OPENAI_API_KEY string = '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.endpoint}/secrets/AZURE-OPENAI-API-KEY)'
+output AZURE_OPENAI_API_KEY string = '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.endpoint}/secrets/azure-openai-api-key)'
 output AZURE_OPENAI_ENDPOINT string = createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
 output AZURE_OPENAI_DEPLOYMENT_NAME string = azureOpenAIDeploymentName
 output AZURE_OPENAI_API_VERSION string = azureOpenAIApiVersion
