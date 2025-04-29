@@ -1,8 +1,15 @@
-import {
-  ChatCompletionSystemMessageParam,
-  ChatCompletionUserMessageParam
-} from "openai/resources/index.mjs";
+
 import { AzureOpenAI } from "openai";
+/*import type {
+  ChatCompletionSystemMessageParam,
+  ChatCompletionUserMessageParam,
+  ChatCompletionAssistantMessageParam
+} from "openai/resources/index.mjs";*/
+import type {
+  ChatCompletionMessageParam,
+  ChatCompletionSystemMessageParam,
+  ChatCompletionUserMessageParam,
+} from "openai/resources/chat/completions";
 import "dotenv/config";
 
 interface GeneratedContent {
@@ -18,9 +25,11 @@ interface ToneGuidelines {
 class AzureOpenAIService {
   private client: AzureOpenAI;
   private readonly toneGuidelines: ToneGuidelines;
+  private readonly deploymentName: string;
 
   constructor() {
     this.validateEnvVariables();
+    this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!;
 
     this.client = new AzureOpenAI({
       apiKey: process.env.AZURE_OPENAI_API_KEY,
@@ -52,8 +61,8 @@ class AzureOpenAIService {
         };
 
         const result = await this.client.chat.completions.create({
-          messages: [systemMessage, userMessage],
-          model: "", // The model is specified in the deployment
+          model: this.deploymentName,
+          messages: [systemMessage, userMessage] as ChatCompletionMessageParam[],
           temperature: 0.7,
           max_tokens: 500,
           response_format: { type: "json_object" },

@@ -3,7 +3,7 @@ import { Form, useActionData, useNavigation } from '@remix-run/react';
 import { useEffect, useState, Suspense, lazy } from 'react';
 import ToneSelector from '~/components/ToneSelector';
 import EnhancedTextInput from '~/components/EnhancedTextInput';
-import { azureOpenAIService } from '../../lib/services/openai-service';
+import { azureOpenAIService } from '../../server/src/services/openai-service.server';
 
 const PreviewCard = lazy(() => import('~/components/PreviewCard'));
 const SuccessNotification = lazy(
@@ -27,8 +27,8 @@ type ActionData = {
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const topic = formData.get('topic');
-  const tone = formData.get('tone');
+  const topic = formData.get('topic') as string;
+  const tone = formData.get('tone') as string;
   const keywords = formData.get('keywords');
 
   if (!topic || typeof topic !== 'string') {
@@ -43,7 +43,7 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const generatedContent = await azureOpenAIService.generateMicroblogContent(
       topic,
-      tone?.toString() || 'casual',
+      tone || 'casual',
       keywords?.toString()
     );
 
