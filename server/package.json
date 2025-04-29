@@ -15,6 +15,8 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
+    "@azure/identity": "^4.9.1",
+    "@azure/openai": "^2.0.0",
     "@remix-run/express": "^2.16.0",
     "compression": "^1.8.0",
     "dotenv": "^16.4.7",
