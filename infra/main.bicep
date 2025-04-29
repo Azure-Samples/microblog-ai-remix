@@ -185,36 +185,36 @@ module microblogApp './app/microblog-app.bicep' = {
     containerAppsEnvironmentName: appsEnv.outputs.name
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     keyVaultName: keyVault.outputs.name
-    
+
     // Key Vault secret names
     openAiApiKeySecretName: 'azure-openai-api-key'
     openAiEndpointSecretName: 'azure-openai-endpoint'
     openAiDeploymentNameSecretName: 'azure-openai-deployment-name'
     openAiApiVersionSecretName: 'azure-openai-api-version'
-    
+
     // Deployment control parameters
     exists: microblogAppExists
-    
+
     // Application configuration
     appDefinition: union(microblogAppDefinition, {
       settings: [
         // Application configuration parameters
         {
-          name: 'AZURE_KEY_VAULT_NAME' 
+          name: 'AZURE_KEY_VAULT_NAME'
           value: keyVault.outputs.name
         }
         {
-          name: 'AZURE_KEY_VAULT_ENDPOINT' 
+          name: 'AZURE_KEY_VAULT_ENDPOINT'
           value: keyVault.outputs.endpoint
         }
         // OpenAI configuration parameters - included here for orchestration purposes
         // These are now set as Key Vault secrets and referenced as container app environment variables
         {
-          name: 'AZURE_OPENAI_DEPLOYMENT_NAME' 
+          name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
           value: azureOpenAIDeploymentName
         }
         {
-          name: 'AZURE_OPENAI_API_VERSION' 
+          name: 'AZURE_OPENAI_API_VERSION'
           value: azureOpenAIApiVersion
         }
         {
