@@ -3,7 +3,7 @@ import { Form, useActionData, useNavigation } from '@remix-run/react';
 import { useEffect, useState, Suspense, lazy } from 'react';
 import ToneSelector from '~/components/ToneSelector';
 import EnhancedTextInput from '~/components/EnhancedTextInput';
-import { azureOpenAIService } from '../services/services';
+import { azureOpenAIService } from '../services/openai-service.server';
 
 const PreviewCard = lazy(() => import('~/components/PreviewCard'));
 const SuccessNotification = lazy(
