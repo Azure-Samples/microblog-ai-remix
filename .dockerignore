@@ -1,0 +1,9 @@
+node_modules/
+.git
+.gitignore
+*.log
+dist/*
+build/*
+server/dist/*
+server/node_modules/
+media/*
