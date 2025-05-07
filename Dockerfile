@@ -1,52 +1,52 @@
 # ------------------------------
-# Stage 1: Build the application
+# 1) Frontend Build (Remix)
 # ------------------------------
-FROM node:20-alpine AS builder
-
-# Set development environment
-ENV NODE_ENV=development
+FROM node:20-alpine AS frontend
 WORKDIR /app
 
-# Copy package files for better caching
 COPY package*.json ./
-COPY server/package*.json ./server/
-
-# Install all dependencies
 RUN npm install
-RUN cd server && npm install
 
-# Copy the entire source code
-COPY . .
+COPY tsconfig.json remix.config.js vite.config.ts ./
+COPY app ./app
+COPY public ./public
 
-# Build Remix application first
+# Build do Frontend - Remix
 RUN npm run build
 
-# Build the server separately (keeping the working directory correct)
-WORKDIR /app/server
-RUN npm run clean && \
-    mkdir -p dist && \
-    cp -r src/* dist/ && \
-    npm run build
+# ------------------------------
+# 2) Backend Build (Express + TS)
+# ------------------------------
+FROM node:20-alpine AS backend
+WORKDIR /server
+
+COPY server/. .
+
+RUN npm install \
+ && npm run clean \
+ && npm run build
 
 # ------------------------------
-# Stage 2: Runtime
+# 3) Image Production
 # ------------------------------
+
 FROM node:20-alpine AS runtime
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=80
-WORKDIR /app
 
-# Install production dependencies
-COPY package*.json ./
-COPY server/package*.json ./server/
-RUN npm install --omit=dev
-RUN cd server && npm install --omit=dev
+COPY package.json ./
+COPY server/package.json ./server/
+RUN npm install --omit=dev \
+  && cd server && npm install --omit=dev
 
-# Copy build artifacts
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/public ./public
+# Frontend
+COPY --from=frontend /app/build ./build
+COPY --from=frontend /app/public ./public
+
+# Backend
+COPY --from=backend /server/dist ./server/dist
 
 EXPOSE 80
 CMD ["node", "server/dist/index.js"]
