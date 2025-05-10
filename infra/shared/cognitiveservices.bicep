@@ -58,3 +58,4 @@ output endpoint string = account.properties.endpoint
 output id string = account.id
 output name string = account.name
 output identityPrincipalId string = account.identity.principalId
+output apiKey string = listKeys(account.id, account.apiVersion).key1

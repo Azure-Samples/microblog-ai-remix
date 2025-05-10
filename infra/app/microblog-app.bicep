@@ -8,22 +8,12 @@ param containerAppsEnvironmentName string
 param applicationInsightsName string
 param exists bool = false
 
-// Key Vault parameters (maintained for future use)
+// Key Vault parameters
 param keyVaultName string
-param openAiApiKeySecretName string = 'AZURE-OPENAI-API-KEY'
-param openAiEndpointSecretName string = 'AZURE-OPENAI-ENDPOINT'
-
-// Direct credential parameters
-@secure()
-param azureOpenAIApiKey string = ''
-@secure()
-param azureOpenAIEndpoint string = ''
-
-@description('Whether the deployment is running on GitHub Actions')
-param runningOnGh string = ''
-
-@description('Id of the user or app to assign application roles')
-param principalId string = ''
+param openAiApiKeySecretName string = 'azure-openai-api-key'
+param openAiEndpointSecretName string = 'azure-openai-endpoint'
+param openAiDeploymentNameSecretName string = 'azure-openai-deployment-name'
+param openAiApiVersionSecretName string = 'azure-openai-api-version'
 
 @secure()
 param appDefinition object
@@ -118,14 +108,26 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
         }
       ]
       secrets: union([
-        // Direct value secrets
+        // Key Vault referenced secrets
         {
           name: 'azure-openai-api-key'
-          value: !empty(azureOpenAIApiKey) ? azureOpenAIApiKey : 'placeholder-value'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiApiKeySecretName}'
+          identity: identity.id
         }
         {
           name: 'azure-openai-endpoint'
-          value: !empty(azureOpenAIEndpoint) ? azureOpenAIEndpoint : 'https://placeholder-endpoint.openai.azure.com'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiEndpointSecretName}'
+          identity: identity.id
+        }
+        {
+          name: 'azure-openai-deployment-name'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiDeploymentNameSecretName}'
+          identity: identity.id
+        }
+        {
+          name: 'azure-openai-api-version'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiApiVersionSecretName}'
+          identity: identity.id
         }
       ], map(secrets, secret => {
         name: secret.secretRef
@@ -154,6 +156,14 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             {
               name: 'AZURE_OPENAI_ENDPOINT'
               secretRef: 'azure-openai-endpoint'
+            }
+            {
+              name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
+              secretRef: 'azure-openai-deployment-name'
+            }
+            {
+              name: 'AZURE_OPENAI_API_VERSION'
+              secretRef: 'azure-openai-api-version'
             }
           ],
           env,
