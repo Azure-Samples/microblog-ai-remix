@@ -9,6 +9,10 @@ export function loadEnvVariables() {
   // Load environment variables from the .env file from the root directory
   dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
+  if (!process.env.AZURE_OPENAI_API_KEY) {
+    throw new Error('AZURE_OPENAI_API_KEY must be configured in environment variables');
+  }
+
   // List of required environment variables
   const requiredEnvVars = [
     'AZURE_OPENAI_API_KEY',

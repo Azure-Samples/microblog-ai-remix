@@ -14,18 +14,12 @@ param runningOnGh string = ''
 
 param microblogAppExists bool = false
 @secure()
-param microblogAppDefinition object = {
-  settings: []
-}
+param microblogAppDefinition object
 
 @description('Id of the user ir app to assign application roles')
 param principalId string = ''
 
 // Azure OpenAI parameters
-@description('Azure OpenAI API Key (leave empty if using Managed Identity)')
-@secure()
-param azureOpenAIApiKey string
-
 @description('Azure OpenAI Endpoint URL')
 param azureOpenAIEndpoint string = ''
 
@@ -105,6 +99,24 @@ module keyVault './shared/keyvault.bicep' = {
   scope: rg
 }
 
+// Virtual Network resource
+module vnet './shared/vnet.bicep' = {
+  name: 'vnet'
+  params: {
+    name: '${abbrs.networkVirtualNetworks}${resourceToken}'
+    location: location
+    tags: tags
+    addressPrefix: '10.0.0.0/16'
+    subnets: [
+      {
+        name: 'infrastructure-subnet'
+        addressPrefix: '10.0.0.0/23'
+      }
+    ]
+  }
+  scope: rg
+}
+
 // Container Apps Environment 
 module appsEnv './shared/apps-env.bicep' = {
   name: 'apps-env'
@@ -114,6 +126,8 @@ module appsEnv './shared/apps-env.bicep' = {
     tags: tags
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     logAnalyticsWorkspaceName: monitoring.outputs.logAnalyticsWorkspaceName
+    vnetName: vnet.outputs.name
+    infraSubnetName: 'infrastructure-subnet'
   }
   scope: rg
 }
@@ -171,35 +185,36 @@ module microblogApp './app/microblog-app.bicep' = {
     containerAppsEnvironmentName: appsEnv.outputs.name
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     keyVaultName: keyVault.outputs.name
-    azureOpenAIApiKey: azureOpenAIApiKey
-    azureOpenAIEndpoint: createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
-    
+
+    // Key Vault secret names
+    openAiApiKeySecretName: 'azure-openai-api-key'
+    openAiEndpointSecretName: 'azure-openai-endpoint'
+    openAiDeploymentNameSecretName: 'azure-openai-deployment-name'
+    openAiApiVersionSecretName: 'azure-openai-api-version'
+
     // Deployment control parameters
     exists: microblogAppExists
-    principalId: principalId
-    runningOnGh: runningOnGh
-    
+
     // Application configuration
     appDefinition: union(microblogAppDefinition, {
       settings: [
         // Application configuration parameters
         {
-          name: 'AZURE_KEY_VAULT_NAME' 
+          name: 'AZURE_KEY_VAULT_NAME'
           value: keyVault.outputs.name
         }
         {
-          name: 'AZURE_KEY_VAULT_ENDPOINT' 
+          name: 'AZURE_KEY_VAULT_ENDPOINT'
           value: keyVault.outputs.endpoint
         }
-        // OpenAI configuration parameters
-        // Note: These are now referenced via Key Vault in the container
-        // but we maintain them in appDefinition for orchestration purposes
+        // OpenAI configuration parameters - included here for orchestration purposes
+        // These are now set as Key Vault secrets and referenced as container app environment variables
         {
-          name: 'AZURE_OPENAI_DEPLOYMENT_NAME' 
+          name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
           value: azureOpenAIDeploymentName
         }
         {
-          name: 'AZURE_OPENAI_API_VERSION' 
+          name: 'AZURE_OPENAI_API_VERSION'
           value: azureOpenAIApiVersion
         }
         {
@@ -210,11 +225,7 @@ module microblogApp './app/microblog-app.bicep' = {
     })
   }
   scope: rg
-  dependsOn: [
-    // Ensure Key Vault secrets are created before Container App deployment
-    openAiKeySecret
-    openAiEndpointSecret
-  ]
+  dependsOn: [openAiKeySecret, openAiEndpointSecret, openAiDeploymentNameSecret, openAiApiVersionSecret]
 }
 
 // Add OpenAI RBAC Roles
@@ -246,30 +257,41 @@ module openAiKeySecret 'shared/keyvault-secret.bicep' = {
   name: 'openai-key-secret'
   params: {
     keyVaultName: keyVault.outputs.name
-    secretName: 'AZURE-OPENAI-API-KEY'
-    secretValue: createNewOpenAIResource 
-      ? listKeys(resourceId('Microsoft.CognitiveServices/accounts', '${abbrs.cognitiveServicesAccounts}${resourceToken}'), '2023-05-01').key1 
-      : azureOpenAIApiKey
+    secretName: 'azure-openai-api-key'
+    secretValue: createNewOpenAIResource ? openAi.outputs.apiKey : ''
   }
   scope: rg
-  dependsOn: [
-    keyVault
-  ]
 }
 
 module openAiEndpointSecret 'shared/keyvault-secret.bicep' = {
   name: 'openai-endpoint-secret'
   params: {
     keyVaultName: keyVault.outputs.name
-    secretName: 'AZURE-OPENAI-ENDPOINT'
-    secretValue: createNewOpenAIResource 
-      ? openAi.outputs.endpoint 
-      : azureOpenAIEndpoint
+    secretName: 'azure-openai-endpoint'
+    secretValue: createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
   }
   scope: rg
-  dependsOn: [
-    keyVault
-  ]
+}
+
+// Add deployment name and API version as secrets in Key Vault
+module openAiDeploymentNameSecret 'shared/keyvault-secret.bicep' = {
+  name: 'openai-deployment-name-secret'
+  params: {
+    keyVaultName: keyVault.outputs.name
+    secretName: 'azure-openai-deployment-name'
+    secretValue: azureOpenAIDeploymentName
+  }
+  scope: rg
+}
+
+module openAiApiVersionSecret 'shared/keyvault-secret.bicep' = {
+  name: 'openai-api-version-secret'
+  params: {
+    keyVaultName: keyVault.outputs.name
+    secretName: 'azure-openai-api-version'
+    secretValue: azureOpenAIApiVersion
+  }
+  scope: rg
 }
 
 // Outputs
@@ -289,7 +311,7 @@ output AZURE_KEY_VAULT_ENDPOINT string = keyVault.outputs.endpoint
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
 
 // OpenAI outputs
-output AZURE_OPENAI_API_KEY string = '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.endpoint}/secrets/AZURE-OPENAI-API-KEY)'
+output AZURE_OPENAI_API_KEY string = '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.endpoint}/secrets/azure-openai-api-key)'
 output AZURE_OPENAI_ENDPOINT string = createNewOpenAIResource ? openAi.outputs.endpoint : azureOpenAIEndpoint
 output AZURE_OPENAI_DEPLOYMENT_NAME string = azureOpenAIDeploymentName
 output AZURE_OPENAI_API_VERSION string = azureOpenAIApiVersion

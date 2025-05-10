@@ -8,22 +8,12 @@ param containerAppsEnvironmentName string
 param applicationInsightsName string
 param exists bool = false
 
-// Key Vault parameters (maintained for future use)
+// Key Vault parameters
 param keyVaultName string
-param openAiApiKeySecretName string = 'AZURE-OPENAI-API-KEY'
-param openAiEndpointSecretName string = 'AZURE-OPENAI-ENDPOINT'
-
-// Direct credential parameters
-@secure()
-param azureOpenAIApiKey string = ''
-@secure()
-param azureOpenAIEndpoint string = ''
-
-@description('Whether the deployment is running on GitHub Actions')
-param runningOnGh string = ''
-
-@description('Id of the user or app to assign application roles')
-param principalId string = ''
+param openAiApiKeySecretName string = 'azure-openai-api-key'
+param openAiEndpointSecretName string = 'azure-openai-endpoint'
+param openAiDeploymentNameSecretName string = 'azure-openai-deployment-name'
+param openAiApiVersionSecretName string = 'azure-openai-api-version'
 
 @secure()
 param appDefinition object
@@ -68,7 +58,7 @@ module acrPullRole '../shared/role.bicep' = {
   params: {
     principalId: identity.properties.principalId
     // AcrPull role definition ID
-    roleDefinitionId: '7f951dda-4ed3-4680-a7ca-43fe172d538d' 
+    roleDefinitionId: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
     principalType: 'ServicePrincipal'
   }
 }
@@ -97,11 +87,11 @@ module fetchLatestImage '../modules/fetch-container-image.bicep' = {
 resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   name: name
   location: location
-  tags: union(tags, {'azd-service-name': 'microblog-ai-remix'})
+  tags: union(tags, { 'azd-service-name': 'microblog-ai-remix' })
   dependsOn: [acrPullRole, kvRoleAssignment]
   identity: {
     type: 'SystemAssigned,UserAssigned'
-    userAssignedIdentities: {'${identity.id}': {}}
+    userAssignedIdentities: { '${identity.id}': {} }
   }
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
@@ -117,50 +107,75 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
           identity: identity.id
         }
       ]
-      secrets: union([
-        // Direct value secrets
-        {
-          name: 'azure-openai-api-key'
-          value: !empty(azureOpenAIApiKey) ? azureOpenAIApiKey : 'placeholder-value'
-        }
-        {
-          name: 'azure-openai-endpoint'
-          value: !empty(azureOpenAIEndpoint) ? azureOpenAIEndpoint : 'https://placeholder-endpoint.openai.azure.com'
-        }
-      ], map(secrets, secret => {
-        name: secret.secretRef
-        value: secret.value
-      }))
+      secrets: union(
+        [
+          // Key Vault referenced secrets
+          {
+            name: 'azure-openai-api-key'
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiApiKeySecretName}'
+            identity: identity.id
+          }
+          {
+            name: 'azure-openai-endpoint'
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiEndpointSecretName}'
+            identity: identity.id
+          }
+          {
+            name: 'azure-openai-deployment-name'
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiDeploymentNameSecretName}'
+            identity: identity.id
+          }
+          {
+            name: 'azure-openai-api-version'
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${openAiApiVersionSecretName}'
+            identity: identity.id
+          }
+        ],
+        map(secrets, secret => {
+          name: secret.secretRef
+          value: secret.value
+        })
+      )
     }
     template: {
       containers: [
         {
           image: fetchLatestImage.outputs.?containers[?0].?image ?? 'mcr.microsoft.com/hello-world:latest'
           name: 'main'
-          env: union([
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: applicationInsights.properties.ConnectionString
-            }
-            {
-              name: 'PORT'
-              value: '80'
-            }
-            // Environment variables referencing secrets
-            {
-              name: 'AZURE_OPENAI_API_KEY'
-              secretRef: 'azure-openai-api-key'
-            }
-            {
-              name: 'AZURE_OPENAI_ENDPOINT'
-              secretRef: 'azure-openai-endpoint'
-            }
-          ],
-          env,
-          map(secrets, secret => {
-            name: secret.name
-            secretRef: secret.secretRef
-          }))
+          env: union(
+            [
+              {
+                name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+                value: applicationInsights.properties.ConnectionString
+              }
+              {
+                name: 'PORT'
+                value: '80'
+              }
+              // Environment variables referencing secrets
+              {
+                name: 'AZURE_OPENAI_API_KEY'
+                secretRef: 'azure-openai-api-key'
+              }
+              {
+                name: 'AZURE_OPENAI_ENDPOINT'
+                secretRef: 'azure-openai-endpoint'
+              }
+              {
+                name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
+                secretRef: 'azure-openai-deployment-name'
+              }
+              {
+                name: 'AZURE_OPENAI_API_VERSION'
+                secretRef: 'azure-openai-api-version'
+              }
+            ],
+            env,
+            map(secrets, secret => {
+              name: secret.name
+              secretRef: secret.secretRef
+            })
+          )
           resources: {
             cpu: json('1.0')
             memory: '2.0Gi'

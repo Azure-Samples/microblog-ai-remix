@@ -1,44 +1,52 @@
 # ------------------------------
-# Stage 1: Build the application
+# 1) Frontend Build (Remix)
 # ------------------------------
-  FROM node:20-alpine AS builder
+FROM node:20-alpine AS frontend
+WORKDIR /app
 
-  # Definimos NODE_ENV=development para garantir que devDependencies sejam instaladas
-  ENV NODE_ENV=development
-  WORKDIR /app
-  
-  # Copia somente os arquivos de pacote, para aproveitar cache de build
-  COPY package*.json ./
-  COPY server/package*.json ./server/
-  
-  # Instala todas as dependências (prod + dev)
-  RUN npm install
-  
-  # Copia todo o restante do código
-  COPY . .
-  
-  # Executa o build (Remix + Tailwind + etc.)
-  RUN npm run build:all
-  
-  # ------------------------------
-  # Stage 2: Runtime
-  # ------------------------------
-  FROM node:20-alpine AS runtime
-  
-  ENV NODE_ENV=production
-  ENV PORT=80
-  WORKDIR /app
-  
-  # Copiamos os package.jsons para instalar apenas as dependências de produção
-  COPY package*.json ./
-  COPY server/package*.json ./server/
-  RUN npm install --omit=dev
-  
-  # Copiamos do “builder” somente os artefatos gerados e o que for preciso
-  COPY --from=builder /app/build ./build
-  COPY --from=builder /app/server/dist ./server/dist
-  COPY --from=builder /app/public ./public
-  
-  EXPOSE 80
-  CMD [ "node", "server/dist/index.js" ]
-  
+COPY package*.json ./
+RUN npm install
+
+COPY tsconfig.json remix.config.js vite.config.ts ./
+COPY app ./app
+COPY public ./public
+
+# Build do Frontend - Remix
+RUN npm run build
+
+# ------------------------------
+# 2) Backend Build (Express + TS)
+# ------------------------------
+FROM node:20-alpine AS backend
+WORKDIR /server
+
+COPY server/. .
+
+RUN npm install \
+ && npm run clean \
+ && npm run build
+
+# ------------------------------
+# 3) Image Production
+# ------------------------------
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=80
+
+COPY package.json ./
+COPY server/package.json ./server/
+RUN npm install --omit=dev \
+  && cd server && npm install --omit=dev
+
+# Frontend
+COPY --from=frontend /app/build ./build
+COPY --from=frontend /app/public ./public
+
+# Backend
+COPY --from=backend /server/dist ./server/dist
+
+EXPOSE 80
+CMD ["node", "server/dist/index.js"]
